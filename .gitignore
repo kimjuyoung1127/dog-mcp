@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# MCP Helpers (Data processing scripts)
+update_breeds.py
+verify_data.py
+merge_breeds.py
+breeds_backup.csv
+plus.csv
+
+# OS
+.DS_Store
+Thumbs.db

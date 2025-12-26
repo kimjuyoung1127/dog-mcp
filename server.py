@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from fastmcp import FastMCP
 import pandas as pd
 import random
@@ -9,11 +10,11 @@ mcp = FastMCP(
     instructions="""
     전문적인 반려견 정보 및 생활 환경 매칭 서비스를 제공하는 MCP 서버입니다.
     
-    ## 💡 활용 팁
+    ## [활용 팁]
     1. **맞춤 추천:** "아파트 거주, 털 빠짐 예민, 활동량 보통, 초보자입니다" 처럼 구체적인 환경을 말하면 적합도 점수가 높은 견종을 추천합니다.
     2. **비교 분석:** 두 견종 중 고민된다면 "말티즈랑 푸들 비교해줘"라고 요청하세요.
     3. **스마트 검색:** 별명(인절미, 소시지독)으로 검색하거나 오타가 있어도 올바른 견종을 찾아줍니다.
-    "
+    ""
 )
 
 # 별칭 사전
@@ -38,7 +39,7 @@ except Exception as e:
 def get_stars(level):
     try:
         level = int(float(level))
-        return '⭐' * level + '☆' * (5 - level)
+        return '★' * level + '☆' * (5 - level)
     except:
         return 'N/A'
 
@@ -80,7 +81,7 @@ def search_breed_by_name(name: str) -> str:
                  "노력형 (인내심 필요)" if train_score == 2 else "자유로운 영혼 (훈련 어려움)"
 
     return f"""
-### 🐶 {breed['name_ko']} ({breed['name_en']})
+### [견종 정보] {breed['name_ko']} ({breed['name_en']})
 
 ![Image]({breed['thumbnail_url']})
 
@@ -88,16 +89,16 @@ def search_breed_by_name(name: str) -> str:
 * **수명:** {breed['avg_life_expectancy']}년 / **체중:** {breed['avg_weight']}kg
 * **인기도:** {breed['popularity_score']}점
 
-#### 📊 특성 지표
-* **💡 지능/훈련:** {get_stars(train_score)} ({train_desc})
-* **⚡ 활동량:** {get_stars(breed['energy_level'])} ({breed['energy_level']}/5)
-* **🧹 털빠짐:** {get_stars(breed['shedding_level'])} ({breed['shedding_level']}/5)
-* **📢 짖음:** {get_stars(breed['barking_level'])} ({breed['barking_level']}/5)
+#### [특성 지표]
+* **[지능/훈련]:** {get_stars(train_score)} ({train_desc})
+* **[활동량]:** {get_stars(breed['energy_level'])} ({breed['energy_level']}/5)
+* **[털빠짐]:** {get_stars(breed['shedding_level'])} ({breed['shedding_level']}/5)
+* **[짖음]:** {get_stars(breed['barking_level'])} ({breed['barking_level']}/5)
 
-#### 📝 요약
+#### [요약]
 {breed['summary']}
 
-#### 📜 유래
+#### [유래]
 {str(breed['history'])[:300]}...
 """
 
@@ -160,22 +161,22 @@ def recommend_by_environment(
     # 상위 3개 추출
     top_3 = temp_df.sort_values(by='match_score', ascending=False).head(3)
     
-    response = f"### 🏠 당신을 위한 맞춤 반려견 TOP 3\n"
-    response += f"*환경: {living_space} / 활동: {activity_level} / 초보자: {'O' if is_beginner else 'X'}*\n\n"
+    response = f"### [추천 결과] 당신을 위한 맞춤 반려견 TOP 3\n"
+    response += f"*환경: {living_space} / 활동: {activity_level} / 초보자: {{'O' if is_beginner else 'X'}}*\n\n"
     
     for _, breed in top_3.iterrows():
         match_pct = max(0, min(100, breed['match_score']))
         train_val = breed.get('trainability', 3)
         
-        response += f"#### 🐾 {breed['name_ko']} (적합도: {int(match_pct)}점)\n"
+        response += f"#### - {breed['name_ko']} (적합도: {int(match_pct)}점)\n"
         response += f"- **훈련 난이도:** {get_stars(train_val)}\n"
         response += f"- **특징:** {breed['summary']}\n"
-        response += f"- **추천 이유:** {'아파트 생활에 적합하고 ' if breed['barking_level'] <= 2 and living_space == 'apartment' else ''}"
+        response += f"- **추천 이유:** {{'아파트 생활에 적합하고 ' if breed['barking_level'] <= 2 and living_space == 'apartment' else ''}}"
         
         if is_beginner and train_val >= 4:
             response += "지능이 높아 초보자도 훈련하기 쉽습니다.\n"
         else:
-            response += f"{'털 관리가 편합니다.' if breed['shedding_level'] <= 2 else '활동 성향이 잘 맞습니다.'}\n"
+            response += f"{{'털 관리가 편합니다.' if breed['shedding_level'] <= 2 else '활동 성향이 잘 맞습니다.'}}\n"
             
         response += f"![thumb]({breed['thumbnail_url']})\n\n"
         
@@ -199,7 +200,7 @@ def compare_breeds(breed1_name: str, breed2_name: str) -> str:
         return "비교할 견종을 찾을 수 없습니다."
 
     return f"""
-### ⚔️ 견종 비교 분석: {b1['name_ko']} vs {b2['name_ko']}
+### [비교 분석]: {b1['name_ko']} vs {b2['name_ko']}
 
 | 특징 | {b1['name_ko']} | {b2['name_ko']} |
 | :--- | :---: | :---: |
@@ -209,9 +210,9 @@ def compare_breeds(breed1_name: str, breed2_name: str) -> str:
 | **털빠짐** | {get_stars(b1['shedding_level'])} | {get_stars(b2['shedding_level'])} |
 | **짖음** | {get_stars(b1['barking_level'])} | {get_stars(b2['barking_level'])} |
 
-**📢 팁:**
-- 훈련이 더 쉬운 개는 **{b1['name_ko'] if b1.get('trainability',3) >= b2.get('trainability',3) else b2['name_ko']}**입니다.
-- 털 관리가 더 편한 개는 **{b1['name_ko'] if b1['shedding_level'] <= b2['shedding_level'] else b2['name_ko']}**입니다.
+**[참고 팁]:**
+- 훈련이 더 쉬운 개는 **{{b1['name_ko'] if b1.get('trainability',3) >= b2.get('trainability',3) else b2['name_ko']}}**입니다.
+- 털 관리가 더 편한 개는 **{{b1['name_ko'] if b1['shedding_level'] <= b2['shedding_level'] else b2['name_ko']}}**입니다.
 """
 
 @mcp.tool()
@@ -219,7 +220,7 @@ def get_top_popularity(count: int = 5) -> str:
     """인기 순위 상위 견종을 조회합니다."""
     if df.empty: return "데이터 없음"
     top_breeds = df.sort_values(by='popularity_score', ascending=False).head(count)
-    response = f"### 🏆 인기 강아지 TOP {count}\n\n"
+    response = f"### [인기 순위] 인기 강아지 TOP {count}\n\n"
     for i, (_, breed) in enumerate(top_breeds.iterrows(), 1):
         response += f"{i}. **{breed['name_ko']}** - {breed['popularity_score']}점\n"
     return response

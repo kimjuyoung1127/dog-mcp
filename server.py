@@ -89,7 +89,7 @@ def search_breed_by_name(name: str) -> str:
 * **인기도:** {breed['popularity_score']}점
 
 #### 📊 특성 지표
-* **🧠 지능/훈련:** {get_stars(train_score)} ({train_desc})
+* **💡 지능/훈련:** {get_stars(train_score)} ({train_desc})
 * **⚡ 활동량:** {get_stars(breed['energy_level'])} ({breed['energy_level']}/5)
 * **🧹 털빠짐:** {get_stars(breed['shedding_level'])} ({breed['shedding_level']}/5)
 * **📢 짖음:** {get_stars(breed['barking_level'])} ({breed['barking_level']}/5)

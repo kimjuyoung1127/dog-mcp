@@ -204,7 +204,7 @@ def compare_breeds(breed1_name: str, breed2_name: str) -> str:
 
 @mcp.tool()
 def get_top_popularity(count: int = 5) -> str:
-    """인기 순위 상위 견종을 조회합니다."""
+    '''인기 순위 상위 견종을 조회합니다.'''
     if df.empty: return "데이터 없음"
     top_breeds = df.sort_values(by='popularity_score', ascending=False).head(count)
     response = f"### [인기 순위] 인기 강아지 TOP {count}\n\n"

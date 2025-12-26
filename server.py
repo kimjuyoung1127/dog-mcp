@@ -112,13 +112,6 @@ def recommend_by_environment(
 ) -> str:
     """
     사용자의 환경에 가장 잘 맞는 반려견을 점수 기반(Match Score)으로 추천합니다.
-    
-    Args:
-        living_space: "apartment" (아파트/빌라) 또는 "house" (마당 있는 주택)
-        activity_level: "low" (가벼운 산책), "moderate" (일반), "high" (조깅/등산)
-        concern_shedding: 털 빠짐에 예민한 경우 True
-        concern_barking: 짖음/소음에 예민한 경우 True
-        is_beginner: 강아지를 처음 키우는 경우 True (훈련이 쉬운 견종 추천)
     """
     if df.empty: return "데이터베이스가 비어있습니다."
 
@@ -130,39 +123,26 @@ def recommend_by_environment(
 
     for idx, row in temp_df.iterrows():
         score = 100
-        
-        # 1. 주거 환경 (아파트 거주 시 짖음과 크기에 엄격)
         if living_space in ["apartment", "아파트", "빌라"]:
             if row['barking_level'] >= 4: score -= 30
             if row['size_type'] == '대형': score -= 25
-        
-        # 2. 짖음 예민도
         if concern_barking:
             score -= (row['barking_level'] * 10)
-            
-        # 3. 털 빠짐 예민도
         if concern_shedding:
             score -= (row['shedding_level'] * 10)
-            
-        # 4. 활동량 매칭
         energy_diff = abs(row['energy_level'] - target_energy)
         score -= (energy_diff * 15)
-        
-        # 5. 초보자 여부 (훈련 편의성 중요)
         if is_beginner:
             train_score = row.get('trainability', 3)
-            if train_score >= 4:
-                score += 10 # 훈련 쉬우면 가산점
-            elif train_score <= 2:
-                score -= 20 # 훈련 어려우면 감점
-        
+            if train_score >= 4: score += 10
+            elif train_score <= 2: score -= 20
         temp_df.at[idx, 'match_score'] = score
 
-    # 상위 3개 추출
     top_3 = temp_df.sort_values(by='match_score', ascending=False).head(3)
     
     response = f"### [추천 결과] 당신을 위한 맞춤 반려견 TOP 3\n"
-    response += f"*환경: {living_space} / 활동: {activity_level} / 초보자: {{'O' if is_beginner else 'X'}}*\n\n"
+    beginner_str = "O" if is_beginner else "X"
+    response += f"*환경: {living_space} / 활동: {activity_level} / 초보자: {beginner_str}*\n\n"
     
     for _, breed in top_3.iterrows():
         match_pct = max(0, min(100, breed['match_score']))
@@ -171,13 +151,17 @@ def recommend_by_environment(
         response += f"#### - {breed['name_ko']} (적합도: {int(match_pct)}점)\n"
         response += f"- **훈련 난이도:** {get_stars(train_val)}\n"
         response += f"- **특징:** {breed['summary']}\n"
-        response += f"- **추천 이유:** {{'아파트 생활에 적합하고 ' if breed['barking_level'] <= 2 and living_space == 'apartment' else ''}}"
+        
+        reason = ""
+        if breed['barking_level'] <= 2 and living_space == 'apartment':
+            reason += "아파트 생활에 적합하고 "
         
         if is_beginner and train_val >= 4:
-            response += "지능이 높아 초보자도 훈련하기 쉽습니다.\n"
+            reason += "지능이 높아 초보자도 훈련하기 쉽습니다.\n"
         else:
-            response += f"{{'털 관리가 편합니다.' if breed['shedding_level'] <= 2 else '활동 성향이 잘 맞습니다.'}}\n"
+            reason += "털 관리가 편합니다.\n" if breed['shedding_level'] <= 2 else "활동 성향이 잘 맞습니다.\n"
             
+        response += f"- **추천 이유:** {reason}"
         response += f"![thumb]({breed['thumbnail_url']})\n\n"
         
     return response
@@ -199,6 +183,9 @@ def compare_breeds(breed1_name: str, breed2_name: str) -> str:
     if b1 is None or b2 is None:
         return "비교할 견종을 찾을 수 없습니다."
 
+    better_train = b1['name_ko'] if b1.get('trainability',3) >= b2.get('trainability',3) else b2['name_ko']
+    better_shed = b1['name_ko'] if b1['shedding_level'] <= b2['shedding_level'] else b2['name_ko']
+
     return f"""
 ### [비교 분석]: {b1['name_ko']} vs {b2['name_ko']}
 
@@ -211,8 +198,8 @@ def compare_breeds(breed1_name: str, breed2_name: str) -> str:
 | **짖음** | {get_stars(b1['barking_level'])} | {get_stars(b2['barking_level'])} |
 
 **[참고 팁]:**
-- 훈련이 더 쉬운 개는 **{{b1['name_ko'] if b1.get('trainability',3) >= b2.get('trainability',3) else b2['name_ko']}}**입니다.
-- 털 관리가 더 편한 개는 **{{b1['name_ko'] if b1['shedding_level'] <= b2['shedding_level'] else b2['name_ko']}}**입니다.
+- 훈련이 더 쉬운 개는 **{better_train}**입니다.
+- 털 관리가 더 편한 개는 **{better_shed}**입니다.
 """
 
 @mcp.tool()

@@ -183,7 +183,7 @@ def compare_breeds(breed1_name: str, breed2_name: str) -> str:
     if b1 is None or b2 is None:
         return "비교할 견종을 찾을 수 없습니다."
 
-    better_train = b1['name_ko'] if b1.get('trainability',3) >= b2.get('trainability',3) else b2['name_ko']
+    better_train = b1['name_ko'] if b1.get('trainability', 3) >= b2.get('trainability', 3) else b2['name_ko']
     better_shed = b1['name_ko'] if b1['shedding_level'] <= b2['shedding_level'] else b2['name_ko']
 
     return f"""

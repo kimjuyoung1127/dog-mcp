@@ -120,26 +120,55 @@ def recommend_by_environment(
 
     # 목표 활동량 수치화
     target_energy = 2 if activity_level == "low" else (5 if activity_level == "high" else 3)
+    is_apartment = living_space in ["apartment", "아파트", "빌라", "오피스텔"]
 
     for idx, row in temp_df.iterrows():
         score = 100
-        if living_space in ["apartment", "아파트", "빌라"]:
-            if row['barking_level'] >= 4: score -= 30
-            if row['size_type'] == '대형': score -= 25
+        
+        # 1. 아파트 거주 시 필터링 강화
+        if is_apartment:
+            # 대형견 페널티 강화
+            if row['size_type'] == '대형': 
+                score -= 50  
+            # 짖음이 심하면(3점 이상) 감점
+            if row['barking_level'] >= 3: 
+                score -= (row['barking_level'] * 5)
+            # 활동량이 너무 많으면(4점 이상) 감점
+            if row['energy_level'] >= 4:
+                score -= 20
+            # 소형/중형 가산점
+            if row['size_type'] in ['소형', '중형']:
+                score += 10
+
+        # 2. 사용자 우려 사항 반영
         if concern_barking:
             score -= (row['barking_level'] * 10)
+        
         if concern_shedding:
             score -= (row['shedding_level'] * 10)
+
+        # 3. 활동량 매칭
         energy_diff = abs(row['energy_level'] - target_energy)
-        score -= (energy_diff * 15)
+        score -= (energy_diff * 10)
+
+        # 4. 초보자 여부
         if is_beginner:
             train_score = row.get('trainability', 3)
-            if train_score >= 4: score += 10
-            elif train_score <= 2: score -= 20
+            # 훈련이 어려우면(2점 이하) 대폭 감점
+            if train_score <= 2: 
+                score -= 30
+            # 훈련이 쉬우면 가산점
+            elif train_score >= 4: 
+                score += 10
+
         temp_df.at[idx, 'match_score'] = score
 
-    top_3 = temp_df.sort_values(by='match_score', ascending=False).head(3)
+    # 점수가 높은 순으로 정렬하되, 50점 미만은 추천 제외 고려
+    top_3 = temp_df[temp_df['match_score'] > 50].sort_values(by='match_score', ascending=False).head(3)
     
+    if top_3.empty:
+        return "조건에 맞는 견종을 찾기 어렵습니다. 조건을 조금 완화해 보세요."
+
     response = f"### [추천 결과] 당신을 위한 맞춤 반려견 TOP 3\n"
     beginner_str = "O" if is_beginner else "X"
     response += f"*환경: {living_space} / 활동: {activity_level} / 초보자: {beginner_str}*\n\n"
@@ -152,16 +181,21 @@ def recommend_by_environment(
         response += f"- **훈련 난이도:** {get_stars(train_val)}\n"
         response += f"- **특징:** {breed['summary']}\n"
         
-        reason = ""
-        if breed['barking_level'] <= 2 and living_space == 'apartment':
-            reason += "아파트 생활에 적합하고 "
+        reason = []
+        if is_apartment and breed['barking_level'] <= 2:
+            reason.append("조용해서 아파트에 적합")
+        if is_apartment and breed['size_type'] == '소형':
+            reason.append("실내 생활에 알맞은 크기")
         
         if is_beginner and train_val >= 4:
-            reason += "지능이 높아 초보자도 훈련하기 쉽습니다.\n"
-        else:
-            reason += "털 관리가 편합니다.\n" if breed['shedding_level'] <= 2 else "활동 성향이 잘 맞습니다.\n"
+            reason.append("초보자도 훈련하기 쉬움")
+        
+        if concern_shedding and breed['shedding_level'] <= 2:
+            reason.append("털 빠짐이 적음")
             
-        response += f"- **추천 이유:** {reason}"
+        reason_str = ", ".join(reason) if reason else "전반적인 성향이 잘 맞습니다."
+            
+        response += f"- **추천 이유:** {reason_str}.\n"
         response += f"![thumb]({breed['thumbnail_url']})\n\n"
         
     return response
